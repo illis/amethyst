@@ -1,6 +1,7 @@
 //! TODO: Rewrite for new renderer.
 
 extern crate amethyst;
+extern crate rayon;
 
 mod pong;
 mod systems;
@@ -17,6 +18,7 @@ use amethyst::ecs::{Component, DenseVecStorage};
 use amethyst::input::InputBundle;
 use amethyst::prelude::*;
 use amethyst::renderer::{DisplayConfig, DrawFlat, Pipeline, PosTex, RenderBundle, Stage};
+use amethyst::core::cgmath::{Vector3};
 use amethyst::ui::{DrawUi, UiBundle};
 
 use audio::Music;
@@ -29,8 +31,10 @@ const PADDLE_WIDTH: f32 = 2.5;
 const PADDLE_VELOCITY: f32 = 75.0;
 const PADDLE_COLOUR: [f32; 4] = [0.0, 0.0, 1.0, 1.0];
 
-const BALL_VELOCITY_X: f32 = 75.0;
-const BALL_VELOCITY_Y: f32 = 50.0;
+const BALL_VELOCITY_X: f32 = 15.0;
+const BALL_VELOCITY_Y: f32 = 10.0;
+//const BALL_VELOCITY_X: f32 = 75.0;
+//const BALL_VELOCITY_Y: f32 = 50.0;
 const BALL_RADIUS: f32 = 2.5;
 const BALL_COLOUR: [f32; 4] = [1.0, 0.0, 0.0, 1.0];
 
@@ -86,6 +90,17 @@ fn run() -> Result<()> {
     game.run();
     Ok(())
 }
+
+#[derive(Debug)]
+pub struct Tracer {
+    pub pos: Vector3<f32>,
+    pub time: Duration,
+}
+
+impl Component for Tracer {
+    type Storage = DenseVecStorage<Self>;
+}
+
 
 pub struct Ball {
     pub velocity: [f32; 2],

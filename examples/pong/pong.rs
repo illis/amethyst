@@ -1,14 +1,15 @@
 use {ARENA_HEIGHT, ARENA_WIDTH};
-use {Ball, Paddle, Side};
+use {Ball, Paddle, Side, Tracer};
 use amethyst::assets::Loader;
-use amethyst::core::cgmath::Vector3;
 use amethyst::core::transform::{GlobalTransform, Transform};
-use amethyst::ecs::World;
+use amethyst::core::{Time};
 use amethyst::prelude::*;
 use amethyst::renderer::{Camera, Event, KeyboardInput, Material, MeshHandle, PosTex, Projection,
                          ScreenDimensions, VirtualKeyCode, WindowEvent, WindowMessages};
 use amethyst::ui::{TtfFormat, UiResize, UiText, UiTransform};
 use systems::ScoreText;
+use amethyst::ecs::{Fetch, WriteStorage, Join};
+use amethyst::core::cgmath::{Vector3, Array};
 
 pub struct Pong;
 
@@ -40,6 +41,52 @@ impl State for Pong {
             },
             _ => Trans::None,
         }
+    }
+
+    fn update(&mut self, world: &mut World) -> Trans {
+        let masspos = {
+            let balls: WriteStorage<Ball> = world.write();
+            let transforms: WriteStorage<Transform> = world.write();
+            let mut last_pos = Vector3::from_value(0.);
+
+            for (_ball, transform) in (&balls, &transforms).join() {
+                last_pos = transform.translation.clone();
+            }
+
+            last_pos
+        };
+
+        let time = {
+            let timer: Fetch<Time> = world.read_resource();
+            timer.absolute_time()
+        };
+
+
+        let tracer = Tracer {
+            pos: masspos, 
+            time: time,
+        };
+        let mesh = create_mesh(world, generate_circle_vertices(BALL_RADIUS, 12));
+        use {BALL_RADIUS};
+        //let mesh = create_mesh(world, generate_rectangle_vertices(0.0, 0.0, 0.02, 0.02));
+        let mat = create_colour_material(world, [0.0, 0.0, 1.0, 0.1]);
+
+        let mut transform = Transform::default();
+        transform.translation = masspos;
+
+        world
+            .create_entity()
+            .with(mesh)
+            .with(mat)
+            .with(tracer)
+            .with(GlobalTransform::default())
+            .with(transform)
+            .build();
+
+
+        world.maintain();
+
+        Trans::None
     }
 }
 

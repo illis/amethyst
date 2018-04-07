@@ -1,8 +1,8 @@
-use {Ball, Paddle, ScoreBoard};
+use {Ball, Paddle, ScoreBoard, Tracer};
 use amethyst::core::bundle::{ECSBundle, Result};
 use amethyst::core::timing::Time;
 use amethyst::ecs::{DispatcherBuilder, World};
-use systems::{BounceSystem, MoveBallsSystem, PaddleSystem, WinnerSystem};
+use systems::{BounceSystem, MoveBallsSystem, PaddleSystem, WinnerSystem, TracerSystem};
 
 /// A bundle is a convenient way to initialise related resources, components and systems in a
 /// world. This bundle prepares the world for a game of pong.
@@ -18,8 +18,10 @@ impl<'a, 'b> ECSBundle<'a, 'b> for PongBundle {
         world.add_resource(Time::default());
         world.register::<Ball>();
         world.register::<Paddle>();
+        world.register::<Tracer>();
 
         Ok(builder
+            .add(TracerSystem,"tracer_system", &[])
             .add(PaddleSystem, "paddle_system", &["input_system"])
             .add(MoveBallsSystem, "ball_system", &[])
             .add(
