@@ -1,28 +1,54 @@
 use {ARENA_HEIGHT, ARENA_WIDTH};
-use {Ball, Paddle, Side};
+use {PADDLE_WIDTH, PADDLE_HEIGHT, PADDLE_COLOUR};
+use {Ball, Paddle, Side, MassRes};
 use amethyst::assets::Loader;
-use amethyst::core::cgmath::Vector3;
+use amethyst::core::cgmath::{Vector3, Array};
 use amethyst::core::transform::{GlobalTransform, Transform};
-use amethyst::ecs::prelude::World;
+use amethyst::ecs::prelude::{Entity, World};
 use amethyst::prelude::*;
 use amethyst::renderer::{Camera, Event, KeyboardInput, Material, MeshHandle, PosTex, Projection,
                          VirtualKeyCode, WindowEvent, WindowMessages};
 use amethyst::ui::{Anchor, Anchored, TtfFormat, UiText, UiTransform};
 use systems::ScoreText;
+use WarmUpState;
+use Mass;
 
-pub struct Pong;
+pub struct Pong {
+    pub warmup_entities: Vec<Entity>,
+    pub warmup_state: WarmUpState,
+}
 
 impl State for Pong {
     fn on_start(&mut self, world: &mut World) {
         use audio::initialise_audio;
 
         // Setup our game.
+        initialise_mass_res(world);
         initialise_paddles(world);
         initialise_balls(world);
         initialise_camera(world);
         initialise_audio(world);
         initialise_score(world);
         hide_cursor(world);
+
+        //warmup_storage(world, &mut self.warmup_entities, 5000);
+    }
+
+    fn update(&mut self, world: &mut World) -> Trans {
+        match self.warmup_state {
+            WarmUpState::Cold => {
+                self.warmup_state = WarmUpState::Warming;
+            },
+            WarmUpState::Warming => {
+                world.delete_entities(&self.warmup_entities).unwrap();
+                self.warmup_entities.clear();
+
+                self.warmup_state = WarmUpState::Warm;
+            },
+            WarmUpState::Warm => {},
+        }
+
+        Trans::None
     }
 
     fn handle_event(&mut self, _: &mut World, event: Event) -> Trans {
@@ -71,6 +97,32 @@ fn hide_cursor(world: &mut World) {
                 eprintln!("Unable to make cursor hidden! Error: {:?}", err);
             }
         });
+}
+
+fn initialise_mass_res(world: &mut World) {
+    let mesh = create_mesh(world, generate_rectangle_vertices(0.0, 0.0, PADDLE_WIDTH/ 10., PADDLE_HEIGHT/10.));
+    let material = create_colour_material(world, PADDLE_COLOUR);
+
+    world.add_resource(MassRes{
+        mesh: mesh,
+        mat: material,
+    });
+}
+
+fn warmup_storage(world: &mut World, entities: &mut Vec<Entity>, num: usize) {
+    let mesh = create_mesh(world, generate_rectangle_vertices(0.0, 0.0, PADDLE_WIDTH/ 10., PADDLE_HEIGHT/10.));
+    let material = create_colour_material(world, PADDLE_COLOUR);
+    let mass =  Mass{ vel: Vector3::new(0., -1.0, 0.), pos: Vector3::from_value(0.), mass: 1.};
+
+    for _i in 0..num {
+        entities.push(world.create_entity()
+                    .with(mass.clone())
+                    .with(mesh.clone())
+                    .with(material.clone())
+                    .with(GlobalTransform::default())
+                    .with(Transform::default())
+                    .build());
+    }
 }
 
 /// Initialises one paddle on the left, and one paddle on the right.
@@ -185,13 +237,13 @@ fn initialise_score(world: &mut World) {
 }
 
 /// Converts a vector of vertices into a mesh.
-fn create_mesh(world: &World, vertices: Vec<PosTex>) -> MeshHandle {
+pub fn create_mesh(world: &World, vertices: Vec<PosTex>) -> MeshHandle {
     let loader = world.read_resource::<Loader>();
     loader.load_from_data(vertices.into(), (), &world.read_resource())
 }
 
 /// Creates a solid material of the specified colour.
-fn create_colour_material(world: &World, colour: [f32; 4]) -> Material {
+pub fn create_colour_material(world: &World, colour: [f32; 4]) -> Material {
     // TODO: optimize
 
     use amethyst::renderer::MaterialDefaults;
@@ -239,7 +291,7 @@ fn generate_circle_vertices(radius: f32, resolution: usize) -> Vec<PosTex> {
 }
 
 /// Generates six vertices forming a rectangle.
-fn generate_rectangle_vertices(left: f32, bottom: f32, right: f32, top: f32) -> Vec<PosTex> {
+pub fn generate_rectangle_vertices(left: f32, bottom: f32, right: f32, top: f32) -> Vec<PosTex> {
     vec![
         PosTex {
             position: [left, bottom, 0.],

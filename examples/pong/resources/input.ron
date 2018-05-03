@@ -8,6 +8,10 @@
             pos: Key(Up),
             neg: Key(Down),
         ),
+        "add": (
+            pos: Key(Q),
+            neg: Key(A),
+        ),
     },
     actions: {
         

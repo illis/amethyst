@@ -18,6 +18,8 @@ use amethyst::input::InputBundle;
 use amethyst::prelude::*;
 use amethyst::renderer::{DisplayConfig, DrawFlat, Pipeline, PosTex, RenderBundle, Stage};
 use amethyst::ui::{DrawUi, UiBundle};
+use amethyst::core::cgmath::Vector3;
+use amethyst::renderer::{MeshHandle, Material};
 
 use audio::Music;
 use bundle::PongBundle;
@@ -50,6 +52,10 @@ fn main() {
 
 fn run() -> Result<()> {
     use pong::Pong;
+    let pong = Pong {
+        warmup_entities: vec![],
+        warmup_state: WarmUpState::Cold,
+    };
 
     let display_config_path = format!(
         "{}/examples/pong/resources/display.ron",
@@ -69,7 +75,7 @@ fn run() -> Result<()> {
             .with_pass(DrawFlat::<PosTex>::new())
             .with_pass(DrawUi::new()),
     );
-    let mut game = Application::build(assets_dir, Pong)?
+    let mut game = Application::build(assets_dir, pong)?
         .with_frame_limit(
             FrameRateLimitStrategy::SleepAndYield(Duration::from_millis(2)),
             144,
@@ -85,6 +91,32 @@ fn run() -> Result<()> {
         .build()?;
     game.run();
     Ok(())
+}
+
+pub enum WarmUpState {
+    Cold,
+    Warming,
+    Warm,
+}
+
+#[derive(Clone)]
+pub struct Mass {
+    pub vel: Vector3<f32>,
+    pub pos: Vector3<f32>,
+    pub mass: f32,
+}
+
+impl Component for Mass {
+    type Storage = DenseVecStorage<Self>;
+}
+
+pub struct MassRes {
+    mesh: MeshHandle,
+    mat: Material,
+}
+
+impl Component for MassRes {
+    type Storage = DenseVecStorage<Self>;
 }
 
 pub struct Ball {
