@@ -41,6 +41,7 @@ mod pass;
 mod prefab;
 mod resize;
 mod text;
+mod textscaler;
 mod transform;
 
 pub use self::bundle::UiBundle;
@@ -55,6 +56,7 @@ pub use self::prefab::{UiCreator, UiFormat, UiImageBuilder, UiLoader, UiLoaderSy
                        UiTextBuilder, UiTransformBuilder, UiWidget};
 pub use self::resize::{ResizeSystem, UiResize};
 pub use self::text::{TextEditing, UiSystem, UiText};
+pub use self::textscaler::{UiTextScaler, UiTextScalerSystem};
 pub use self::transform::{UiFinder, UiTransform};
 
 /// How many times the cursor blinks per second while editing text.
